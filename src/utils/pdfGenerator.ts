@@ -47,9 +47,9 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(75, 85, 99);
-  doc.text("📍 Near HP Petrol Bunk (Erode Main Road)", 105, 32, { align: "center" });
-  doc.text("Nathakadaiyur, Kangayam (Po), Tiruppur (Dt) – 638108", 105, 37, { align: "center" });
-  doc.text("📞 +91 9698786494", 105, 42, { align: "center" });
+  doc.text("Near HP Petrol Bunk (Erode Main Road)", 105, 32, { align: "center" });
+  doc.text("Nathakadaiyur, Kangayam (Po), Tiruppur (Dt) - 638108", 105, 37, { align: "center" });
+  doc.text("Phone: +91 9698786494", 105, 42, { align: "center" });
 
   // Bill Details Card
   doc.setFillColor(255, 255, 255);
@@ -58,14 +58,14 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 58, 138);
-  doc.text("🧾 Bill Details", 15, 68);
+  doc.text("Bill Details", 15, 68);
   
   doc.setFont("helvetica", "normal");
   doc.setTextColor(55, 65, 81);
   doc.setFontSize(9);
   doc.text(`Bill No: ${data.billNumber}`, 15, 75);
   doc.text(`Date: ${data.billDate}`, 15, 81);
-  doc.text(`💳 Payment: ${data.paymentMode}`, 15, 87);
+  doc.text(`Payment Mode: ${data.paymentMode}`, 15, 87);
 
   // Customer Details Card
   doc.setFillColor(255, 255, 255);
@@ -74,14 +74,14 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 58, 138);
-  doc.text("👤 Customer Details", 110, 68);
+  doc.text("Customer Details", 110, 68);
   
   doc.setFont("helvetica", "normal");
   doc.setTextColor(55, 65, 81);
   doc.setFontSize(9);
   doc.text(`Name: ${data.customerName}`, 110, 75);
   if (data.customerPhone) {
-    doc.text(`📱 Phone: ${data.customerPhone}`, 110, 81);
+    doc.text(`Phone: ${data.customerPhone}`, 110, 81);
   }
 
   // Product Table Card
@@ -141,10 +141,10 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   // Summary Details - properly aligned
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(75, 85, 99);
+  doc.setTextColor(55, 65, 81);
   
   const subtotal = data.items.reduce((sum, item) => sum + item.total, 0);
-  const labelX = 125;
+  const labelX = 130;
   const valueX = 195;
   
   // Subtotal
@@ -157,22 +157,22 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   
   // Discount
   doc.text("Discount:", labelX, finalY + 28);
-  doc.text(`- Rs ${data.discount.toFixed(2)}`, valueX, finalY + 28, { align: "right" });
+  doc.text(`Rs ${data.discount.toFixed(2)}`, valueX, finalY + 28, { align: "right" });
 
   // Total line separator
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.5);
-  doc.line(125, finalY + 32, 195, finalY + 32);
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(130, finalY + 33, 195, finalY + 33);
 
   // Total Payable Box with colored background
   doc.setFillColor(37, 99, 235);
-  doc.roundedRect(120, finalY + 36, 75, 10, 2, 2, 'F');
+  doc.roundedRect(125, finalY + 37, 70, 11, 2, 2, 'F');
   
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
-  doc.text("Total Payable:", 125, finalY + 43);
-  doc.text(`Rs ${data.totalAmount.toFixed(2)}`, valueX, finalY + 43, { align: "right" });
+  doc.text("Total Payable:", 130, finalY + 44);
+  doc.text(`Rs ${data.totalAmount.toFixed(2)}`, valueX, finalY + 44, { align: "right" });
 
   // Footer Section
   const footerY = finalY + 60;
@@ -183,41 +183,45 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   doc.line(15, footerY - 3, 195, footerY - 3);
   
   // Thank you message
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 58, 138);
-  doc.text("Thank you for shopping with SPS_SPORTS_WEAR", 105, footerY + 5, { align: "center" });
+  doc.text("Thank you for shopping with SPS SPORTS WEAR", 105, footerY + 6, { align: "center" });
   
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(75, 85, 99);
-  doc.text("Visit again!", 105, footerY + 11, { align: "center" });
+  doc.text("Visit again!", 105, footerY + 13, { align: "center" });
 
   // Social Media Section - Side by Side (Centered)
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   
-  const socialY = footerY + 19;
+  const socialY = footerY + 22;
   const centerX = 105;
   
   // Instagram (left side)
   doc.setTextColor(193, 53, 132);
-  doc.text("Instagram:", centerX - 35, socialY);
-  doc.setTextColor(75, 85, 99);
-  doc.text("@sps_sports_wears", centerX - 20, socialY);
+  doc.setFont("helvetica", "bold");
+  doc.text("Instagram:", centerX - 40, socialY);
+  doc.setTextColor(55, 65, 81);
+  doc.setFont("helvetica", "normal");
+  doc.text("@sps_sports_wears", centerX - 24, socialY);
   
   // WhatsApp (right side)
   doc.setTextColor(34, 197, 94);
-  doc.text("WhatsApp:", centerX + 12, socialY);
-  doc.setTextColor(75, 85, 99);
-  doc.text("+91 9698786494", centerX + 30, socialY);
+  doc.setFont("helvetica", "bold");
+  doc.text("WhatsApp:", centerX + 8, socialY);
+  doc.setTextColor(55, 65, 81);
+  doc.setFont("helvetica", "normal");
+  doc.text("+91 9698786494", centerX + 25, socialY);
 
   // Full Address - Centered
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(107, 114, 128);
-  doc.text("Near HP Petrol Bunk (Erode Main Road), Nathakadaiyur,", 105, socialY + 7, { align: "center" });
-  doc.text("Kangayam (Po), Tiruppur (Dt) - 638108", 105, socialY + 12, { align: "center" });
+  doc.text("Near HP Petrol Bunk (Erode Main Road), Nathakadaiyur,", 105, socialY + 8, { align: "center" });
+  doc.text("Kangayam (Po), Tiruppur (Dt) - 638108", 105, socialY + 13, { align: "center" });
 
   // Save PDF
   doc.save(`Bill_${data.billNumber}_${data.customerName}.pdf`);
