@@ -100,7 +100,7 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
     startY: 100,
     head: [["Description", "Qty", "Unit Price", "Total"]],
     body: tableData,
-    theme: "plain",
+    theme: "grid",
     headStyles: {
       fillColor: [30, 58, 138],
       textColor: [255, 255, 255],
@@ -108,18 +108,22 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
       fontSize: 10,
       halign: "center",
       valign: "middle",
-      cellPadding: 5,
+      cellPadding: 6,
+      lineWidth: 0.1,
+      lineColor: [203, 213, 225],
     },
     bodyStyles: {
       fontSize: 9,
-      cellPadding: 4,
+      cellPadding: 5,
       textColor: [55, 65, 81],
+      lineWidth: 0.1,
+      lineColor: [229, 231, 235],
     },
     columnStyles: {
-      0: { cellWidth: 90, halign: "left" },
+      0: { cellWidth: 85, halign: "left" },
       1: { cellWidth: 25, halign: "center" },
-      2: { cellWidth: 37, halign: "right" },
-      3: { cellWidth: 38, halign: "right" },
+      2: { cellWidth: 40, halign: "right" },
+      3: { cellWidth: 40, halign: "right" },
     },
     alternateRowStyles: {
       fillColor: [249, 250, 251],
@@ -128,79 +132,92 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   });
 
   // Get the final Y position after table
-  const finalY = (doc as any).lastAutoTable.finalY + 5;
+  const finalY = (doc as any).lastAutoTable.finalY + 8;
 
-  // Summary Card
+  // Summary Card with better spacing
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(10, finalY, 190, 45, 3, 3, 'F');
+  doc.roundedRect(10, finalY, 190, 50, 3, 3, 'F');
 
-  // Summary Details
+  // Summary Details - properly aligned
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(75, 85, 99);
   
   const subtotal = data.items.reduce((sum, item) => sum + item.total, 0);
-  const summaryX = 140;
-  const valueX = 192;
+  const labelX = 125;
+  const valueX = 195;
   
-  doc.text("Subtotal:", summaryX, finalY + 10);
-  doc.text(`₹${subtotal.toFixed(2)}`, valueX, finalY + 10, { align: "right" });
+  // Subtotal
+  doc.text("Subtotal:", labelX, finalY + 12);
+  doc.text(`Rs ${subtotal.toFixed(2)}`, valueX, finalY + 12, { align: "right" });
   
-  doc.text("Shipping Charge:", summaryX, finalY + 17);
-  doc.text(`₹${data.shippingCharge.toFixed(2)}`, valueX, finalY + 17, { align: "right" });
+  // Shipping Charge
+  doc.text("Shipping Charge:", labelX, finalY + 20);
+  doc.text(`Rs ${data.shippingCharge.toFixed(2)}`, valueX, finalY + 20, { align: "right" });
   
-  doc.text("Discount:", summaryX, finalY + 24);
-  doc.text(`-₹${data.discount.toFixed(2)}`, valueX, finalY + 24, { align: "right" });
+  // Discount
+  doc.text("Discount:", labelX, finalY + 28);
+  doc.text(`- Rs ${data.discount.toFixed(2)}`, valueX, finalY + 28, { align: "right" });
 
   // Total line separator
   doc.setDrawColor(229, 231, 235);
   doc.setLineWidth(0.5);
-  doc.line(140, finalY + 28, 195, finalY + 28);
+  doc.line(125, finalY + 32, 195, finalY + 32);
 
   // Total Payable Box with colored background
-  doc.setFillColor(37, 99, 235); // Bright blue
-  doc.roundedRect(135, finalY + 31, 60, 11, 2, 2, 'F');
+  doc.setFillColor(37, 99, 235);
+  doc.roundedRect(120, finalY + 36, 75, 10, 2, 2, 'F');
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(255, 255, 255);
-  doc.text("💰 Total Payable:", 140, finalY + 38);
-  doc.text(`₹${data.totalAmount.toFixed(2)}`, valueX, finalY + 38, { align: "right" });
+  doc.text("Total Payable:", 125, finalY + 43);
+  doc.text(`Rs ${data.totalAmount.toFixed(2)}`, valueX, finalY + 43, { align: "right" });
 
   // Footer Section
-  const footerY = finalY + 55;
+  const footerY = finalY + 60;
+  
+  // Top border line for footer
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(15, footerY - 3, 195, footerY - 3);
   
   // Thank you message
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 58, 138);
-  doc.text("Thank you for shopping with SPS_SPORTS_WEAR", 105, footerY, { align: "center" });
+  doc.text("Thank you for shopping with SPS_SPORTS_WEAR", 105, footerY + 5, { align: "center" });
+  
   doc.setFontSize(9);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(75, 85, 99);
-  doc.text("Visit again!", 105, footerY + 5, { align: "center" });
+  doc.text("Visit again!", 105, footerY + 11, { align: "center" });
 
-  // Social Media Section
+  // Social Media Section - Side by Side (Centered)
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(55, 65, 81);
   
-  // Instagram
-  doc.setTextColor(193, 53, 132); // Instagram pink
-  doc.text("📷 Instagram:", 60, footerY + 13);
-  doc.setTextColor(75, 85, 99);
-  doc.text("@sps_sports_wears", 85, footerY + 13);
+  const socialY = footerY + 19;
+  const centerX = 105;
   
-  // WhatsApp
-  doc.setTextColor(34, 197, 94); // WhatsApp green
-  doc.text("💬 WhatsApp:", 60, footerY + 19);
+  // Instagram (left side)
+  doc.setTextColor(193, 53, 132);
+  doc.text("Instagram:", centerX - 35, socialY);
   doc.setTextColor(75, 85, 99);
-  doc.text("+91 9698786494", 85, footerY + 19);
+  doc.text("@sps_sports_wears", centerX - 20, socialY);
+  
+  // WhatsApp (right side)
+  doc.setTextColor(34, 197, 94);
+  doc.text("WhatsApp:", centerX + 12, socialY);
+  doc.setTextColor(75, 85, 99);
+  doc.text("+91 9698786494", centerX + 30, socialY);
 
-  // Bottom border line
-  doc.setDrawColor(203, 213, 225);
-  doc.setLineWidth(0.3);
-  doc.line(15, footerY + 25, 195, footerY + 25);
+  // Full Address - Centered
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(107, 114, 128);
+  doc.text("Near HP Petrol Bunk (Erode Main Road), Nathakadaiyur,", 105, socialY + 7, { align: "center" });
+  doc.text("Kangayam (Po), Tiruppur (Dt) - 638108", 105, socialY + 12, { align: "center" });
 
   // Save PDF
   doc.save(`Bill_${data.billNumber}_${data.customerName}.pdf`);
