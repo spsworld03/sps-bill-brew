@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Receipt, ShoppingBag, Settings, LogOut } from "lucide-react";
+import { Plus, Trash2, Receipt, ShoppingBag, Settings, LogOut, FileText, User, Download } from "lucide-react";
 import { products as defaultProducts, getProductByCode, Product } from "@/data/products";
 import { generateBillPDF, BillData, BillItem } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
@@ -55,11 +55,32 @@ const Index = () => {
       setBillNumber(`SPS${nextNum}`);
     }
 
-    const savedProducts = localStorage.getItem("customProducts");
-    if (savedProducts) {
-      const customProducts = JSON.parse(savedProducts);
-      setProducts([...defaultProducts, ...customProducts]);
-    }
+    const loadCustomProducts = () => {
+      const savedProducts = localStorage.getItem("customProducts");
+      if (savedProducts) {
+        const customProducts = JSON.parse(savedProducts);
+        setProducts([...defaultProducts, ...customProducts]);
+      }
+    };
+
+    loadCustomProducts();
+
+    // Listen for storage changes to dynamically update product list
+    const handleStorageChange = (e: StorageEvent | CustomEvent) => {
+      if ('key' in e && e.key === "customProducts") {
+        loadCustomProducts();
+      } else if (e.type === "productsUpdated") {
+        loadCustomProducts();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange as EventListener);
+    window.addEventListener("productsUpdated", handleStorageChange as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange as EventListener);
+      window.removeEventListener("productsUpdated", handleStorageChange as EventListener);
+    };
   }, []);
 
   const calculateSubtotal = () => {
@@ -227,34 +248,48 @@ const Index = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Customer & Bill Info */}
           <div className="lg:col-span-1 space-y-6">
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="bg-gradient-to-r from-primary to-accent text-white">
-                <CardTitle className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5" />
+            {/* Bill Details */}
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-primary/20 animate-fade-in">
+              <CardHeader className="bg-gradient-to-r from-primary via-primary/90 to-accent text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                    <FileText className="h-5 w-5" />
+                  </div>
                   Bill Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div>
-                  <Label htmlFor="billNumber">Bill Number</Label>
+              <CardContent className="space-y-5 pt-6 bg-gradient-to-br from-background to-muted/30">
+                <div className="space-y-2 animate-scale-in">
+                  <Label htmlFor="billNumber" className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">🧾</span> Bill Number
+                  </Label>
                   <Input
                     id="billNumber"
                     value={billNumber}
                     readOnly
-                    className="font-bold bg-muted"
+                    className="font-bold bg-muted border-2 border-muted hover:border-primary/30 transition-colors"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="billDate">Bill Date</Label>
-                  <Input id="billDate" value={billDate} readOnly className="bg-muted" />
+                <div className="space-y-2 animate-scale-in" style={{ animationDelay: '0.1s' }}>
+                  <Label htmlFor="billDate" className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">📅</span> Bill Date
+                  </Label>
+                  <Input 
+                    id="billDate" 
+                    value={billDate} 
+                    readOnly 
+                    className="bg-muted border-2 border-muted hover:border-primary/30 transition-colors" 
+                  />
                 </div>
-                <div>
-                  <Label htmlFor="paymentMode">Payment Mode</Label>
+                <div className="space-y-2 animate-scale-in" style={{ animationDelay: '0.2s' }}>
+                  <Label htmlFor="paymentMode" className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">💳</span> Payment Mode
+                  </Label>
                   <Select value={paymentMode} onValueChange={setPaymentMode}>
-                    <SelectTrigger id="paymentMode">
+                    <SelectTrigger id="paymentMode" className="border-2 border-muted focus:border-primary transition-colors">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover border-2">
                       <SelectItem value="Online">Online</SelectItem>
                       <SelectItem value="Offline">Offline</SelectItem>
                     </SelectContent>
@@ -263,45 +298,61 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="bg-gradient-to-r from-secondary to-[hsl(210,100%,50%)] text-white">
-                <CardTitle>Customer Details</CardTitle>
+            {/* Customer Details */}
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-secondary/20 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <CardHeader className="bg-gradient-to-r from-secondary via-secondary/90 to-[hsl(210,100%,50%)] text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                    <User className="h-5 w-5" />
+                  </div>
+                  Customer Details
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div>
-                  <Label htmlFor="customerName">Customer Name *</Label>
+              <CardContent className="space-y-5 pt-6 bg-gradient-to-br from-background to-muted/30">
+                <div className="space-y-2 animate-scale-in">
+                  <Label htmlFor="customerName" className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">👤</span> Customer Name *
+                  </Label>
                   <Input
                     id="customerName"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Enter customer name"
+                    placeholder="Enter customer name..."
+                    className="border-2 border-muted focus:border-secondary transition-colors"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="customerPhone">Phone Number</Label>
+                <div className="space-y-2 animate-scale-in" style={{ animationDelay: '0.1s' }}>
+                  <Label htmlFor="customerPhone" className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">📱</span> Phone Number
+                  </Label>
                   <Input
                     id="customerPhone"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Enter phone number"
+                    placeholder="Enter phone number..."
                     type="tel"
+                    className="border-2 border-muted focus:border-secondary transition-colors"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* Summary Card */}
-            <Card className="shadow-lg border-2 border-primary hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="bg-gradient-to-r from-accent/20 to-accent/10">
-                <CardTitle className="text-foreground">Bill Summary</CardTitle>
+            <Card className="shadow-lg border-2 border-primary/30 hover:shadow-xl transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <CardHeader className="bg-gradient-to-r from-accent/20 to-accent/10 border-b-2 border-accent/20">
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <span className="text-lg">💰</span> Bill Summary
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 pt-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span className="font-semibold">₹{calculateSubtotal().toFixed(2)}</span>
+              <CardContent className="space-y-4 pt-6">
+                <div className="flex justify-between text-sm p-3 bg-muted/50 rounded-lg">
+                  <span className="text-muted-foreground font-medium">Subtotal:</span>
+                  <span className="font-semibold text-foreground">₹{calculateSubtotal().toFixed(2)}</span>
                 </div>
-                <div>
-                  <Label htmlFor="shipping" className="text-xs">Shipping Charge</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="shipping" className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">🚚</span> Shipping Charge
+                  </Label>
                   <Input
                     id="shipping"
                     type="number"
@@ -310,11 +361,13 @@ const Index = () => {
                     placeholder="Enter the Amount"
                     min="0"
                     step="0.01"
-                    className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                    className="border-2 border-muted focus:border-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="discount" className="text-xs">Discount</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="discount" className="text-sm font-semibold flex items-center gap-2">
+                    <span className="text-lg">🏷️</span> Discount
+                  </Label>
                   <Input
                     id="discount"
                     type="number"
@@ -323,13 +376,13 @@ const Index = () => {
                     placeholder="Enter the Amount"
                     min="0"
                     step="0.01"
-                    className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+                    className="border-2 border-muted focus:border-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
-                <div className="pt-3 border-t-2 border-primary">
-                  <div className="flex justify-between items-center">
+                <div className="pt-4 mt-2 border-t-2 border-primary/30">
+                  <div className="flex justify-between items-center bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg">
                     <span className="text-lg font-bold text-primary">Total Payable:</span>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-2xl font-bold text-primary animate-scale-in">
                       ₹{calculateTotal().toFixed(2)}
                     </span>
                   </div>
@@ -340,10 +393,12 @@ const Index = () => {
 
           {/* Right Column - Products */}
           <div className="lg:col-span-2">
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="bg-gradient-to-r from-primary to-accent text-white">
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5" />
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-primary/20 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <CardHeader className="bg-gradient-to-r from-primary to-accent text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                    <ShoppingBag className="h-5 w-5" />
+                  </div>
                   Products
                 </CardTitle>
               </CardHeader>
@@ -424,21 +479,22 @@ const Index = () => {
                     onClick={addProductLine}
                     variant="outline"
                     size="sm"
-                    className="border-2 border-dashed border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02]"
+                    className="border-2 border-dashed border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-105 hover:shadow-md"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Product
                   </Button>
                 </div>
 
-                {/* Generate PDF Button */}
+                {/* Download PDF Button */}
                 <div className="mt-8">
                   <Button
                     onClick={handleGeneratePDF}
-                    className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    disabled={productLines.length === 0}
+                    className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Receipt className="h-5 w-5 mr-2" />
-                    Generate & Download PDF
+                    <Download className="h-5 w-5 mr-2" />
+                    Download PDF
                   </Button>
                 </div>
               </CardContent>

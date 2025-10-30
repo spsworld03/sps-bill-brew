@@ -5,9 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ArrowLeft, Settings2, Package } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Settings2, Package, Edit2 } from "lucide-react";
 import { Product } from "@/data/products";
 import logo from "@/assets/sps-logo.png";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -19,6 +26,8 @@ const Settings = () => {
     price: "",
     category: "",
   });
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     const savedProducts = localStorage.getItem("customProducts");
@@ -59,6 +68,9 @@ const Settings = () => {
     setProducts(updatedProducts);
     localStorage.setItem("customProducts", JSON.stringify(updatedProducts));
 
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent("productsUpdated"));
+
     toast({
       title: "Product Added",
       description: `${product.code} - ${product.description} added successfully`,
@@ -72,10 +84,39 @@ const Settings = () => {
     setProducts(updatedProducts);
     localStorage.setItem("customProducts", JSON.stringify(updatedProducts));
 
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent("productsUpdated"));
+
     toast({
       title: "Product Deleted",
       description: "Product removed successfully",
     });
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateProduct = () => {
+    if (!editingProduct) return;
+
+    const updatedProducts = products.map((p) =>
+      p.code === editingProduct.code ? editingProduct : p
+    );
+    setProducts(updatedProducts);
+    localStorage.setItem("customProducts", JSON.stringify(updatedProducts));
+
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent("productsUpdated"));
+
+    toast({
+      title: "Product Updated",
+      description: "Product details updated successfully",
+    });
+
+    setEditDialogOpen(false);
+    setEditingProduct(null);
   };
 
   const handleLogout = () => {
@@ -207,7 +248,7 @@ const Settings = () => {
                   {products.map((product) => (
                     <div
                       key={product.code}
-                      className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-border"
+                      className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-all duration-300 border border-border hover:shadow-md"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
@@ -221,14 +262,98 @@ const Settings = () => {
                           ₹{product.price.toFixed(2)}
                         </p>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => handleDeleteProduct(product.code)}
-                        className="hover:scale-105 transition-transform"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Dialog open={editDialogOpen && editingProduct?.code === product.code} onOpenChange={(open) => {
+                          setEditDialogOpen(open);
+                          if (!open) setEditingProduct(null);
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleEditProduct(product)}
+                              className="hover:scale-105 transition-transform hover:bg-primary/10"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Edit Product</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 pt-4">
+                              <div>
+                                <Label htmlFor="edit-code">Product Code</Label>
+                                <Input
+                                  id="edit-code"
+                                  value={editingProduct?.code || ""}
+                                  disabled
+                                  className="bg-muted"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="edit-description">Description</Label>
+                                <Input
+                                  id="edit-description"
+                                  value={editingProduct?.description || ""}
+                                  onChange={(e) =>
+                                    setEditingProduct(
+                                      editingProduct
+                                        ? { ...editingProduct, description: e.target.value }
+                                        : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="edit-price">Price</Label>
+                                <Input
+                                  id="edit-price"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={editingProduct?.price || ""}
+                                  onChange={(e) =>
+                                    setEditingProduct(
+                                      editingProduct
+                                        ? { ...editingProduct, price: parseFloat(e.target.value) }
+                                        : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="edit-category">Category</Label>
+                                <Input
+                                  id="edit-category"
+                                  value={editingProduct?.category || ""}
+                                  onChange={(e) =>
+                                    setEditingProduct(
+                                      editingProduct
+                                        ? { ...editingProduct, category: e.target.value }
+                                        : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              <Button
+                                onClick={handleUpdateProduct}
+                                className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                              >
+                                Update Product
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => handleDeleteProduct(product.code)}
+                          className="hover:scale-105 transition-transform"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
