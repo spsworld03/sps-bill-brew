@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Receipt, ShoppingBag } from "lucide-react";
-import { products, getProductByCode } from "@/data/products";
+import { Plus, Trash2, Receipt, ShoppingBag, Settings, LogOut } from "lucide-react";
+import { products as defaultProducts, getProductByCode, Product } from "@/data/products";
 import { generateBillPDF, BillData, BillItem } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/sps-logo.png";
@@ -26,6 +27,7 @@ interface ProductLine {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [billNumber, setBillNumber] = useState("SPS01");
   const [customerName, setCustomerName] = useState("");
@@ -36,6 +38,7 @@ const Index = () => {
   ]);
   const [shippingCharge, setShippingCharge] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [products, setProducts] = useState<Product[]>(defaultProducts);
 
   const billDate = new Date().toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -43,13 +46,19 @@ const Index = () => {
     year: "numeric",
   });
 
-  // Load bill number from localStorage
+  // Load bill number and custom products from localStorage
   useEffect(() => {
     const savedBillNumber = localStorage.getItem("lastBillNumber");
     if (savedBillNumber) {
       const numPart = parseInt(savedBillNumber.replace("SPS", ""));
       const nextNum = (numPart + 1).toString().padStart(2, "0");
       setBillNumber(`SPS${nextNum}`);
+    }
+
+    const savedProducts = localStorage.getItem("customProducts");
+    if (savedProducts) {
+      const customProducts = JSON.parse(savedProducts);
+      setProducts([...defaultProducts, ...customProducts]);
     }
   }, []);
 
@@ -63,7 +72,7 @@ const Index = () => {
   };
 
   const handleProductCodeChange = (lineId: string, code: string) => {
-    const product = getProductByCode(code);
+    const product = products.find((p) => p.code === code);
     if (product) {
       setProductLines((prev) =>
         prev.map((line) =>
@@ -79,6 +88,11 @@ const Index = () => {
         )
       );
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated");
+    navigate("/login");
   };
 
   const handleQuantityChange = (lineId: string, quantity: number) => {
@@ -180,21 +194,41 @@ const Index = () => {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <img src={logo} alt="SPS Sports Wear" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
-          <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-[hsl(30,100%,55%)] bg-clip-text text-transparent">
-              SPS SPORTS WEAR
-            </h1>
-            <p className="text-muted-foreground text-sm md:text-base">Billing System</p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="SPS Sports Wear" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                SPS SPORTS WEAR
+              </h1>
+              <p className="text-muted-foreground text-sm md:text-base">Billing System</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/settings")}
+              className="hover:scale-105 transition-transform"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={handleLogout}
+              className="hover:scale-105 transition-transform"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Customer & Bill Info */}
           <div className="lg:col-span-1 space-y-6">
-            <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-primary to-[hsl(30,100%,55%)] text-white">
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="bg-gradient-to-r from-primary to-accent text-white">
                 <CardTitle className="flex items-center gap-2">
                   <Receipt className="h-5 w-5" />
                   Bill Details
@@ -229,7 +263,7 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg">
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="bg-gradient-to-r from-secondary to-[hsl(210,100%,50%)] text-white">
                 <CardTitle>Customer Details</CardTitle>
               </CardHeader>
@@ -257,7 +291,7 @@ const Index = () => {
             </Card>
 
             {/* Summary Card */}
-            <Card className="shadow-lg border-2 border-primary">
+            <Card className="shadow-lg border-2 border-primary hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="bg-gradient-to-r from-accent/20 to-accent/10">
                 <CardTitle className="text-foreground">Bill Summary</CardTitle>
               </CardHeader>
@@ -271,11 +305,12 @@ const Index = () => {
                   <Input
                     id="shipping"
                     type="number"
-                    value={shippingCharge}
+                    value={shippingCharge || ""}
                     onChange={(e) => setShippingCharge(Number(e.target.value) || 0)}
-                    placeholder="0.00"
+                    placeholder="Enter the Amount"
                     min="0"
                     step="0.01"
+                    className="transition-all duration-200 focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
@@ -283,11 +318,12 @@ const Index = () => {
                   <Input
                     id="discount"
                     type="number"
-                    value={discount}
+                    value={discount || ""}
                     onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                    placeholder="0.00"
+                    placeholder="Enter the Amount"
                     min="0"
                     step="0.01"
+                    className="transition-all duration-200 focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div className="pt-3 border-t-2 border-primary">
@@ -304,8 +340,8 @@ const Index = () => {
 
           {/* Right Column - Products */}
           <div className="lg:col-span-2">
-            <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-primary to-[hsl(30,100%,55%)] text-white">
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="bg-gradient-to-r from-primary to-accent text-white">
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingBag className="h-5 w-5" />
                   Products
@@ -387,7 +423,8 @@ const Index = () => {
                   <Button
                     onClick={addProductLine}
                     variant="outline"
-                    className="w-full border-2 border-dashed border-primary hover:bg-primary/10"
+                    size="sm"
+                    className="border-2 border-dashed border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02]"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Product
@@ -398,7 +435,7 @@ const Index = () => {
                 <div className="mt-8">
                   <Button
                     onClick={handleGeneratePDF}
-                    className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-[hsl(30,100%,55%)] hover:opacity-90 transition-opacity"
+                    className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Receipt className="h-5 w-5 mr-2" />
                     Generate & Download PDF

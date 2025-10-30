@@ -92,8 +92,8 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   const tableData = data.items.map((item) => [
     item.description,
     item.quantity.toString(),
-    `₹${item.price.toFixed(2)}`,
-    `₹${item.total.toFixed(2)}`,
+    item.price.toFixed(2),
+    item.total.toFixed(2),
   ]);
 
   autoTable(doc, {
@@ -149,15 +149,15 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   
   // Subtotal
   doc.text("Subtotal:", labelX, finalY + 12);
-  doc.text(`Rs ${subtotal.toFixed(2)}`, valueX, finalY + 12, { align: "right" });
+  doc.text(subtotal.toFixed(2), valueX, finalY + 12, { align: "right" });
   
   // Shipping Charge
   doc.text("Shipping Charge:", labelX, finalY + 20);
-  doc.text(`Rs ${data.shippingCharge.toFixed(2)}`, valueX, finalY + 20, { align: "right" });
+  doc.text(data.shippingCharge.toFixed(2), valueX, finalY + 20, { align: "right" });
   
   // Discount
   doc.text("Discount:", labelX, finalY + 28);
-  doc.text(`Rs ${data.discount.toFixed(2)}`, valueX, finalY + 28, { align: "right" });
+  doc.text(data.discount.toFixed(2), valueX, finalY + 28, { align: "right" });
 
   // Total line separator
   doc.setDrawColor(203, 213, 225);
@@ -172,7 +172,7 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
   doc.text("Total Payable:", 130, finalY + 44);
-  doc.text(`Rs ${data.totalAmount.toFixed(2)}`, valueX, finalY + 44, { align: "right" });
+  doc.text(data.totalAmount.toFixed(2), valueX, finalY + 44, { align: "right" });
 
   // Footer Section
   const footerY = finalY + 60;
