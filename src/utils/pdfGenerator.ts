@@ -172,7 +172,7 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
   doc.text("Total Payable:", 130, finalY + 44);
-  doc.text(data.totalAmount.toFixed(2), valueX, finalY + 44, { align: "right" });
+  doc.text(data.totalAmount.toFixed(2), 190, finalY + 44, { align: "right" });
 
   // Footer Section
   const footerY = finalY + 60;

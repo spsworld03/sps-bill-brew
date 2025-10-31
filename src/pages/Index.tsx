@@ -16,6 +16,7 @@ import { products as defaultProducts, getProductByCode, Product } from "@/data/p
 import { generateBillPDF, BillData, BillItem } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/sps-logo.png";
+import { addBillRecord, loadBillRecords } from "@/lib/billStore";
 
 interface ProductLine {
   id: string;
@@ -48,6 +49,9 @@ const Index = () => {
 
   // Load bill number and custom products from localStorage
   useEffect(() => {
+    // Load bill records from localStorage
+    loadBillRecords();
+    
     const savedBillNumber = localStorage.getItem("lastBillNumber");
     if (savedBillNumber) {
       const numPart = parseInt(savedBillNumber.replace("SPS", ""));
@@ -182,6 +186,23 @@ const Index = () => {
 
     try {
       await generateBillPDF(billData, logo);
+      
+      // Save bill record to global array
+      addBillRecord({
+        billNo: billNumber,
+        date: billDate,
+        customer: customerName,
+        phone: customerPhone,
+        paymentMode,
+        subtotal: calculateSubtotal(),
+        discount,
+        total: calculateTotal(),
+        items: validProducts.map(line => ({
+          name: line.description,
+          qty: line.quantity,
+          price: line.price,
+        })),
+      });
       
       // Update bill number
       localStorage.setItem("lastBillNumber", billNumber);
