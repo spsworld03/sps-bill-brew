@@ -22,6 +22,11 @@
 
   <body>
     <div id="root"></div>
-      <script type="module" src="./src/main.tsx"></script>
+
+    <!-- Vite client for HMR (optional, can be removed in production) -->
+    <script type="module" src="./@vite/client"></script>
+
+    <!-- Main entry point -->
+    <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
