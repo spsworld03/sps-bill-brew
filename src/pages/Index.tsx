@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, Receipt, ShoppingBag, Settings, LogOut, FileText, User, Download } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { products as defaultProducts, getProductByCode, Product } from "@/data/products";
 import { generateBillPDF, BillData, BillItem } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,7 @@ const Index = () => {
   const [shippingCharge, setShippingCharge] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [products, setProducts] = useState<Product[]>(defaultProducts);
+  const [isDynamicMode, setIsDynamicMode] = useState(false);
 
   const billDate = new Date().toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -130,6 +132,21 @@ const Index = () => {
     );
   };
 
+  const handleDynamicProductChange = (lineId: string, field: 'description' | 'quantity' | 'price', value: string | number) => {
+    setProductLines((prev) =>
+      prev.map((line) => {
+        if (line.id === lineId) {
+          const updatedLine = { ...line, [field]: value };
+          if (field === 'quantity' || field === 'price') {
+            updatedLine.total = updatedLine.quantity * updatedLine.price;
+          }
+          return updatedLine;
+        }
+        return line;
+      })
+    );
+  };
+
   const addProductLine = () => {
     const newId = Date.now().toString();
     setProductLines((prev) => [
@@ -155,7 +172,11 @@ const Index = () => {
       return;
     }
 
-    const validProducts = productLines.filter((line) => line.code && line.quantity > 0);
+    const validProducts = productLines.filter((line) => 
+      isDynamicMode 
+        ? line.description.trim() && line.quantity > 0 && line.price > 0
+        : line.code && line.quantity > 0
+    );
     if (validProducts.length === 0) {
       toast({
         title: "Missing Information",
@@ -416,23 +437,43 @@ const Index = () => {
           <div className="lg:col-span-2">
             <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-primary/20 animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <CardHeader className="bg-gradient-to-r from-primary to-accent text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3 text-lg">
-                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                    <ShoppingBag className="h-5 w-5" />
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                      <ShoppingBag className="h-5 w-5" />
+                    </div>
+                    Products
+                  </CardTitle>
+                  <div className="flex items-center gap-3 bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+                    <span className="text-sm font-medium">Dynamic Mode</span>
+                    <Switch 
+                      checked={isDynamicMode} 
+                      onCheckedChange={setIsDynamicMode}
+                      className="data-[state=checked]:bg-white"
+                    />
                   </div>
-                  Products
-                </CardTitle>
+                </div>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   {/* Table Header */}
-                  <div className="hidden md:grid md:grid-cols-12 gap-4 font-semibold text-sm text-muted-foreground pb-2 border-b">
-                    <div className="col-span-3">Product Code</div>
-                    <div className="col-span-4">Description</div>
-                    <div className="col-span-2">Quantity</div>
-                    <div className="col-span-2">Total</div>
-                    <div className="col-span-1"></div>
-                  </div>
+                  {!isDynamicMode ? (
+                    <div className="hidden md:grid md:grid-cols-12 gap-4 font-semibold text-sm text-muted-foreground pb-2 border-b">
+                      <div className="col-span-3">Product Code</div>
+                      <div className="col-span-4">Description</div>
+                      <div className="col-span-2">Quantity</div>
+                      <div className="col-span-2">Total</div>
+                      <div className="col-span-1"></div>
+                    </div>
+                  ) : (
+                    <div className="hidden md:grid md:grid-cols-12 gap-4 font-semibold text-sm text-muted-foreground pb-2 border-b">
+                      <div className="col-span-4">Product Name</div>
+                      <div className="col-span-3">Quantity</div>
+                      <div className="col-span-3">Price</div>
+                      <div className="col-span-1">Total</div>
+                      <div className="col-span-1"></div>
+                    </div>
+                  )}
 
                   {/* Product Lines */}
                   {productLines.map((line) => (
@@ -440,47 +481,94 @@ const Index = () => {
                       key={line.id}
                       className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      <div className="md:col-span-3">
-                        <Label className="md:hidden text-xs">Product Code</Label>
-                        <Select
-                          value={line.code}
-                          onValueChange={(value) => handleProductCodeChange(line.id, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select code" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.code} value={product.code}>
-                                {product.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="md:col-span-4">
-                        <Label className="md:hidden text-xs">Description</Label>
-                        <Input value={line.description} readOnly className="bg-background" />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Label className="md:hidden text-xs">Quantity</Label>
-                        <Input
-                          type="number"
-                          value={line.quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(line.id, Number(e.target.value) || 1)
-                          }
-                          min="1"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Label className="md:hidden text-xs">Total</Label>
-                        <Input
-                          value={`₹${line.total.toFixed(2)}`}
-                          readOnly
-                          className="font-bold bg-background"
-                        />
-                      </div>
+                      {!isDynamicMode ? (
+                        <>
+                          <div className="md:col-span-3">
+                            <Label className="md:hidden text-xs">Product Code</Label>
+                            <Select
+                              value={line.code}
+                              onValueChange={(value) => handleProductCodeChange(line.id, value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select code" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {products.map((product) => (
+                                  <SelectItem key={product.code} value={product.code}>
+                                    {product.code}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="md:col-span-4">
+                            <Label className="md:hidden text-xs">Description</Label>
+                            <Input value={line.description} readOnly className="bg-background" />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label className="md:hidden text-xs">Quantity</Label>
+                            <Input
+                              type="number"
+                              value={line.quantity}
+                              onChange={(e) =>
+                                handleQuantityChange(line.id, Number(e.target.value) || 1)
+                              }
+                              min="1"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label className="md:hidden text-xs">Total</Label>
+                            <Input
+                              value={`₹${line.total.toFixed(2)}`}
+                              readOnly
+                              className="font-bold bg-background"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="md:col-span-4">
+                            <Label className="md:hidden text-xs">Product Name</Label>
+                            <Input
+                              value={line.description}
+                              onChange={(e) => handleDynamicProductChange(line.id, 'description', e.target.value)}
+                              placeholder="Enter product name..."
+                              className="border-2 border-muted focus:border-primary transition-colors"
+                            />
+                          </div>
+                          <div className="md:col-span-3">
+                            <Label className="md:hidden text-xs">Quantity</Label>
+                            <Input
+                              type="number"
+                              value={line.quantity}
+                              onChange={(e) => handleDynamicProductChange(line.id, 'quantity', Number(e.target.value) || 1)}
+                              min="1"
+                              placeholder="Qty"
+                              className="border-2 border-muted focus:border-primary transition-colors"
+                            />
+                          </div>
+                          <div className="md:col-span-3">
+                            <Label className="md:hidden text-xs">Price</Label>
+                            <Input
+                              type="number"
+                              value={line.price || ""}
+                              onChange={(e) => handleDynamicProductChange(line.id, 'price', Number(e.target.value) || 0)}
+                              min="0"
+                              step="0.01"
+                              placeholder="Price"
+                              className="border-2 border-muted focus:border-primary transition-colors"
+                            />
+                          </div>
+                          <div className="md:col-span-1">
+                            <Label className="md:hidden text-xs">Total</Label>
+                            <Input
+                              value={`₹${line.total.toFixed(2)}`}
+                              readOnly
+                              className="font-bold bg-background"
+                            />
+                          </div>
+                        </>
+                      )}
                       <div className="md:col-span-1 flex items-end">
                         <Button
                           variant="destructive"

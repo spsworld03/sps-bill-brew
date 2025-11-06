@@ -153,7 +153,8 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   
   // Shipping Charge
   doc.text("Shipping Charge:", labelX, finalY + 20);
-  doc.text(data.shippingCharge.toFixed(2), valueX, finalY + 20, { align: "right" });
+  const shippingText = data.shippingCharge > 0 ? data.shippingCharge.toFixed(2) : "Free Shipping";
+  doc.text(shippingText, valueX, finalY + 20, { align: "right" });
   
   // Discount
   doc.text("Discount:", labelX, finalY + 28);
