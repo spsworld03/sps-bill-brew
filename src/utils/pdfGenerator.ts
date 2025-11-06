@@ -158,7 +158,8 @@ export const generateBillPDF = async (data: BillData, logoUrl: string) => {
   
   // Discount
   doc.text("Discount:", labelX, finalY + 28);
-  doc.text(data.discount.toFixed(2), valueX, finalY + 28, { align: "right" });
+  const discountText = data.discount > 0 ? data.discount.toFixed(2) : "Standard Price";
+  doc.text(discountText, valueX, finalY + 28, { align: "right" });
 
   // Total line separator
   doc.setDrawColor(203, 213, 225);

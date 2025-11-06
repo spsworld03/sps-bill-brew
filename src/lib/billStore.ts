@@ -53,3 +53,28 @@ export const loadBillRecords = () => {
 export const getAllBillRecords = (): StoredBillRecord[] => {
   return [...billRecords];
 };
+
+// Function to generate next bill number with dynamic leading zeros
+export const getNextBillNumber = (): string => {
+  let lastNumber = 0;
+  
+  if (billRecords.length > 0) {
+    // Extract numeric part from last bill number
+    const lastBill = billRecords[billRecords.length - 1];
+    const match = lastBill.billNo.match(/\d+/);
+    if (match) {
+      lastNumber = parseInt(match[0]);
+    }
+  }
+  
+  // Increment
+  const nextNumber = lastNumber + 1;
+  
+  // Calculate dynamic padding based on number size
+  // 1-9: 2 digits (01-09), 10-99: 2 digits (10-99), 100-999: 3 digits (100-999), etc.
+  const numDigits = nextNumber.toString().length;
+  const minDigits = Math.max(2, numDigits); // Minimum 2 digits
+  const paddedNumber = nextNumber.toString().padStart(minDigits, '0');
+  
+  return `SPS${paddedNumber}`;
+};

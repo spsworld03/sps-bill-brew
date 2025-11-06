@@ -17,7 +17,7 @@ import { products as defaultProducts, getProductByCode, Product } from "@/data/p
 import { generateBillPDF, BillData, BillItem } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/sps-logo.png";
-import { addBillRecord, loadBillRecords } from "@/lib/billStore";
+import { addBillRecord, loadBillRecords, getNextBillNumber } from "@/lib/billStore";
 
 interface ProductLine {
   id: string;
@@ -54,12 +54,8 @@ const Index = () => {
     // Load bill records from localStorage
     loadBillRecords();
     
-    const savedBillNumber = localStorage.getItem("lastBillNumber");
-    if (savedBillNumber) {
-      const numPart = parseInt(savedBillNumber.replace("SPS", ""));
-      const nextNum = (numPart + 1).toString().padStart(2, "0");
-      setBillNumber(`SPS${nextNum}`);
-    }
+    // Generate next bill number with dynamic leading zeros
+    setBillNumber(getNextBillNumber());
 
     const loadCustomProducts = () => {
       const savedProducts = localStorage.getItem("customProducts");
@@ -226,10 +222,7 @@ const Index = () => {
       });
       
       // Update bill number
-      localStorage.setItem("lastBillNumber", billNumber);
-      const numPart = parseInt(billNumber.replace("SPS", ""));
-      const nextNum = (numPart + 1).toString().padStart(2, "0");
-      setBillNumber(`SPS${nextNum}`);
+      setBillNumber(getNextBillNumber());
 
       toast({
         title: "Success!",
@@ -415,7 +408,7 @@ const Index = () => {
                     type="number"
                     value={discount || ""}
                     onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                    placeholder="Enter the Amount"
+                    placeholder="Standard Price"
                     min="0"
                     step="0.01"
                     className="border-2 border-muted focus:border-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20"
